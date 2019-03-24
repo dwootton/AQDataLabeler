@@ -4,7 +4,4 @@ class Controller {
 		this.timeChart = null;
 		this.interpChart = null;
 	}
-	static setView(viewName,viewInstance){
-		this[viewName] = viewInstance;
-	}
 }
