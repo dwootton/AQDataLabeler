@@ -6,19 +6,18 @@ class Slider {
     width = 1490 - margin.left - margin.right,
     height = 100;
 
-  let timeBounds = [new Date(window.controller.selector.startDate), new Date(window.controller.selector.endDate )];
+  let bounds = [0, window.controller.map.times.length];
+  console.log(bounds);
 
   let interval = 15;
-  this.times = generateNewTimes(timeBounds[0],timeBounds[1],interval);
-  let times = this.times;
 
-  this.xScale = d3.scaleTime().range([0, width])
-      .domain(timeBounds)
+  this.xScale = d3.scaleLinear().range([0, width])
+      .domain(bounds)
       .clamp(true);
 
   //this.updateData(data);
   let xBandStarts = []
-  let dataNewYorkTimes = times.map(d => {
+  let dataNewYorkTimes = d3.range(0,bounds[1]).map(d => {
     xBandStarts.push(this.xScale(d));
     return {
     timePoint: this.xScale(d),
@@ -31,7 +30,7 @@ class Slider {
     .attr('width', width)
     .attr('height', height);
   this.svg =svg;
-  let padding = 0.1;
+  let padding = 0.05;
 
   let xBand = d3
     .scaleBand()
@@ -50,7 +49,7 @@ class Slider {
     ]);
 
   let xBandVals = []
-  times.map(d => {
+  d3.range(0,bounds[1]).map(d => {
     xBandVals.push(xLinear(d));
   });
 
@@ -58,7 +57,7 @@ class Slider {
 
   var y = d3
     .scaleLinear()
-    .domain([0, 75])
+    .domain([0, 1])
     .nice()
     .range([height - margin.bottom, margin.top]);
   //let parseDate = d3.timeFormat("%Y-%m-%d")
@@ -114,9 +113,11 @@ class Slider {
   svg.append('g').call(slider);
   let that = this;
   var draw = selected => {
-    let xPosition = this.xScale(new Date(selected));
+    let xPosition = this.xScale(selected);
 
-    let closestBarLocation = indexOfClosest(xBandVals,xPosition);
+    let closestBarLocation = Math.round(selected);
+    console.log(closestBarLocation);
+    window.controller.map.selectIndex(closestBarLocation);
     /*xBandStarts.reduce(function(prev,curr){
       prev = prev + xBand.bandwidth()/2;
       curr = curr + xBand.bandwidth()/2;
@@ -126,6 +127,7 @@ class Slider {
     barsEnter
       .merge(bars)
       .attr('fill', (d,i) => {
+        console.log(closestBarLocation);
         /*
         console.log(d.timePoint,);
         if(d.timePoint < this.xScale(roundToInterval(new Date(selected),interval))){ // if greater
@@ -137,53 +139,16 @@ class Slider {
         return (i === closestBarLocation ? '#bad80a' : '#e0e0e0')
       });
 
-    if(isNaN(selected.getTime())){
-      selected = timeBounds[0];
-    }
-    that.selectedDate = new Date(roundToInterval(new Date(selected),15));
-    if(that.renderedDate == null){
-      that.renderedDate = new Date();
-    }
-    if(that.selectedDate.toISOString() == that.renderedDate.toISOString()){
-      return;
-    }
+
     that.renderedDate = that.selectedDate;
-    let m = that.selectedDate;
-    var dateString =
-        m.getUTCFullYear() + "/" +
-        ("0" + (m.getUTCMonth()+1)).slice(-2) + "/" +
-        ("0" + m.getUTCDate()).slice(-2) + " " +
-        ("0" + m.getUTCHours()).slice(-2) + ":" +
-        ("0" + m.getUTCMinutes()).slice(-2) + ":" +
-        ("0" + m.getUTCSeconds()).slice(-2);
+    let dateString = window.controller.map.times[window.controller.map.currentPoint];
 
     d3.select('p#value-new-york-times').text(
       dateString
       //d3.format(parseDate)(dataNewYorkTimes[3].value)
     );
-    d3.select('.parameter').property("value", dateString);
+    d3.select('.parameter').property("value", selected);
 
-    window.controller.selector.setSelectedDate(that.selectedDate,"slider");
-    //window.controller.selector.grabAllSensorData(that.selectedDate);
-    //window.controller.selector.grabAllModelData(that.selectedDate);
-    window.controller.map.getDataAtTime(that.selectedDate);
-
-    /*Attach a  global listener for keys
-    $(document).keydown(function(e) {
-      switch(e.which) {
-
-          case 37: // left
-          draw(that.selectedDate.getTime()-5*60*1000);
-          break;
-
-          case 39: // right
-          draw(that.selectedDate.getTime()+5*60*1000);
-          break;
-
-          default: return; // exit this handler for other keys
-      }
-    e.preventDefault(); // prevent the default action (scroll / move caret)
-    });*/
 
 
   }
@@ -263,186 +228,9 @@ class Slider {
 
     }*/
   }
-  moveSlider(offset){
-    if(window.controller.selectedDate.getTime()+offset > window.controller.selector.endDate.getTime() || window.controller.selectedDate.getTime()+offset < window.controller.selector.startDate.getTime()){
-      return; // as it would be outside of the slider
-    }
-    //set both timechart and slider
-    window.controller.selector.setSelectedDate(new Date(window.controller.selectedDate.getTime()+offset),'timeChart');
-    window.controller.selector.setSelectedDate(new Date(window.controller.selectedDate.getTime()+offset),'slider');
-  }
-
-  changeDates(){
-    this.removeSVG();
-
-    var margin = { top: 10, right: 50, bottom: 50, left: 40 },//{ top: 10, right: 50, bottom: 50, left: 40 }
-      width = 1500 - margin.left - margin.right,
-      height = 100;
-    this.margin = margin;
-    let timeBounds = [new Date(window.controller.selector.startDate), new Date(window.controller.selector.endDate )];
-
-    let interval = 15;
-    this.times = generateNewTimes(timeBounds[0],timeBounds[1],interval);
-    let times = this.times;
-
-    this.xScale = d3.scaleTime().range([0, width])
-        .domain(timeBounds)
-        .clamp(true);
-
-    //this.updateData(data);
-    let xBandStarts = []
-    let dataNewYorkTimes = times.map(d => {
-      xBandStarts.push(this.xScale(d));
-      return {
-      timePoint: this.xScale(d),
-      value: 20 // change this value to be the averaged pm 25 pollution
-      }
-    });
-
-    let svg = d3
-      .select('#slider')
-      .attr('width', width)
-      .attr('height', height);
-
-    this.svg =svg;
-    let padding = 0.1;
-
-    let xBand = d3
-      .scaleBand()
-      .domain(xBandStarts)
-      .range([margin.left, width - margin.right])
-      .padding(padding);
-
-    let xLinear = this.xScale
-      .range([
-        margin.left + xBand.bandwidth() / 2 + xBand.step() * padding - 0.5,
-        width -
-          margin.right -
-          xBand.bandwidth() / 2 -
-          xBand.step() * padding -
-          0.5,
-      ]);
-
-    let xBandVals = []
-    times.map(d => {
-      xBandVals.push(xLinear(d));
-    });
 
 
 
-    var y = d3
-      .scaleLinear()
-      .domain([0, 75])
-      .nice()
-      .range([height - margin.bottom, margin.top]);
-    //let parseDate = d3.timeFormat("%Y-%m-%d")
-    this.yScale =y;
-
-    /*var yAxis = g =>
-      g
-        .attr('transform', `translate(${width - margin.right},0)`)
-        .call(
-          d3
-            .axisRight(y)
-        )
-        .call(g => g.select('.domain').remove());*/
-
-    this.slider = d3
-          .sliderBottom(xLinear)
-          .ticks(6)
-          .default(9)
-          .on('onchange', value => draw(value))
-          .displayFormat(d3.timeFormat("%m-%d \n %H:%M %p"));
-    var slider = g =>
-      g.attr('transform', `translate(0,${height - margin.bottom})`).call(this.slider);
-
-    var bars = svg
-      .append('g')
-      .selectAll('rect')
-      .data(dataNewYorkTimes);
-    var barsEnter = bars
-      .enter()
-      .append('rect')
-      .attr('class','sliderBars')
-      .attr('x', d =>
-      { return xBand(d.timePoint)})
-      .attr('y', d => y(d.value))
-      .attr('height', d => y(0) - y(d.value))
-      .attr('width', xBand.bandwidth()); //
-
-
-    let yAxis = d3.axisLeft(y).ticks(2);
-    svg.append("g")
-      .attr("class", "yAxis")
-      .call(yAxis)
-      .attr('transform', `translate(${margin.left-5},0)`)
-    .append("text")
-      .attr("transform", "rotate(-90)")
-      .attr("y", 6)
-      .attr("dy", ".71em")
-      .style("text-anchor", "end")
-      .text("AVG PM 2.5");
-
-    svg.append('g').call(slider);
-    let that = this;
-    var draw = selected => {
-      let xPosition = this.xScale(new Date(selected));
-
-      let closestBarLocation = indexOfClosest(xBandVals,xPosition);
-      /*xBandStarts.reduce(function(prev,curr){
-        prev = prev + xBand.bandwidth()/2;
-        curr = curr + xBand.bandwidth()/2;
-        return (Math.abs(curr - xPosition) < Math.abs(prev - xPosition) ? curr : prev);
-      })*/
-
-      barsEnter
-        .merge(bars)
-        .attr('fill', (d,i) => {
-          /*
-          console.log(d.timePoint,);
-          if(d.timePoint < this.xScale(roundToInterval(new Date(selected),interval))){ // if greater
-            if(d.timePoint + 17 > this.xScale(roundToInterval(new Date(selected),interval))){
-              return '#bad80a';
-            }
-          }
-          return '#e0e0e0'*/
-          return (i === closestBarLocation ? '#bad80a' : '#e0e0e0')
-        });
-
-      if(isNaN(selected.getTime())){
-        selected = timeBounds[0];
-      }
-      that.selectedDate = new Date(roundToInterval(new Date(selected),15));
-      if(that.renderedDate == null){
-        that.renderedDate = new Date();
-      }
-      if(that.selectedDate.toISOString() == that.renderedDate.toISOString()){
-        return;
-      }
-      that.renderedDate = that.selectedDate;
-      let m = that.selectedDate;
-      var dateString =
-          m.getUTCFullYear() + "/" +
-          ("0" + (m.getUTCMonth()+1)).slice(-2) + "/" +
-          ("0" + m.getUTCDate()).slice(-2) + " " +
-          ("0" + m.getUTCHours()).slice(-2) + ":" +
-          ("0" + m.getUTCMinutes()).slice(-2) + ":" +
-          ("0" + m.getUTCSeconds()).slice(-2);
-
-      d3.select('p#value-new-york-times').text(
-        dateString
-        //d3.format(parseDate)(dataNewYorkTimes[3].value)
-      );
-      d3.select('.parameter').property("value", dateString);
-
-      window.controller.selector.setSelectedDate(that.selectedDate,"slider");
-      //window.controller.selector.grabAllSensorData(that.selectedDate);
-      //window.controller.selector.grabAllModelData(that.selectedDate);
-      window.controller.map.getDataAtTime(window.controller.selectedDate);
-    }
-
-
-  }
 
   removeSVG(){
     this.svg.selectAll('*').remove();
@@ -450,14 +238,16 @@ class Slider {
 
   changeData(data){
     let margin = { top: 10, right: 50, bottom: 50, left: 40 };
-    let timeBounds = [new Date(window.controller.selector.startDate), new Date(window.controller.selector.endDate )];
     let interval = 15;
     // check if time bounds changed?
-    let times = generateNewTimes(timeBounds[0],timeBounds[1],interval);
-    let newData = largestTriangleThreeBuckets(data,times.length);
+    let bounds = [0, window.controller.map.times.length];
+
+    let vals = d3.range(bounds[0],bounds[1]);
+    let newData = data;//largestTriangleThreeBuckets(data,times.length);
     //this.updateData(data);
+    console.log(data, vals);
     let xBandStarts = []
-    let dataNewYorkTimes = times.map((d,i) => {
+    let dataNewYorkTimes = vals.map((d,i) => {
       xBandStarts.push(this.xScale(d));
       return {
       timePoint: this.xScale(d),
@@ -466,6 +256,8 @@ class Slider {
     });
 
     this.yScale.domain([0,d3.max(data)])
+    console.log(this.yScale);
+    console.log(this.yScale(1),this.yScale(0));
     let yAxis = d3.axisLeft(this.yScale).ticks(2);
     d3.select('.yAxis').remove('*');
     this.svg.append("g")
@@ -477,16 +269,17 @@ class Slider {
       .attr("y", 6)
       .attr("dy", ".71em")
       .style("text-anchor", "end")
-      .text("AVG PM 2.5");
+      .text("Correlation");
     var bars = this.svg
       .selectAll('.sliderBars')
       .data(dataNewYorkTimes);
     let yscale = this.yScale;
+    console.log(yscale(0), yscale(1),yscale(.5),yscale);
     bars
       //.merge(bars)
-      .transition(500)
+      //.transition(500)
       .attr('y', d => yscale(d.value))
-      .attr('height', d => yscale(0) - yscale(d.value));
+      .attr('height', d => yscale(0) - yscale(d.value) + 5);
 
 
   }

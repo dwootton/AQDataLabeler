@@ -171,7 +171,7 @@ class Selector {
     Promise.all(promises.map(p => p.catch(() => undefined)))
 
     Promise.all(promises).then(values => {
-        this.correlations = [];
+        this.correlations = [0];
         let index = 0;
         let organizedModelDataCollection = [];
         values.forEach(value => {
@@ -199,7 +199,7 @@ class Selector {
             }
 
           })
-          //window.controller.slider.changeData(this.correlations);
+          window.controller.slider.changeData(this.correlations);
 
           this.entireModelData = organizedModelDataCollection;
           this.contours = [];
